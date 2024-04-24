@@ -15,6 +15,7 @@ namespace Blazor_Client.Receiver.Brokers
         private readonly IConnection _connection;
         private readonly IModel _channel;
         private EventingBasicConsumer _consumer;
+        private string _consumerTag;
 
         public RabbitMqBroker(string clientProvidedName, string connectionString, string queueName, string exchangeName, string routingKey)
         {
@@ -41,9 +42,18 @@ namespace Blazor_Client.Receiver.Brokers
         public void Close()
         {
             _channel.BasicCancel(_channel.BasicConsume(_queueName, false, _consumer));
+            //CancelConsumption();
             _channel.Close();
             _connection.Close();
         }
+
+        //private void CancelConsumption()
+        //{
+        //    if (_channel.IsOpen && !string.IsNullOrEmpty(_consumerTag))
+        //    {
+        //        _channel.BasicCancel(_consumerTag);
+        //    }
+        //}
 
         // kan lägga till string queueName om man vill ändra kön
         public void Subscribe()
@@ -61,25 +71,29 @@ namespace Blazor_Client.Receiver.Brokers
             }
             catch (Exception ex) { Debug.WriteLine(ex.Message); }
         }
-       
-        public bool IsSubscribed { get; set; } = false;
-        public void Subscribe(Action<string> messageReceivedCallback)
+
+        public async Task SubscribeAsync(Action<string> messageReceivedCallback)
         {
             try
             {
-                _consumer.Received += (sender, args) =>
+                _consumer.Received += (_, args) =>
                 {
-                    string message = Encoding.UTF8.GetString(args.Body.ToArray());
-                    messageReceivedCallback(message);
-                    _channel.BasicAck(args.DeliveryTag, false);
+                    if (args is not null)
+                    {
+                        string message = Encoding.UTF8.GetString(args.Body.ToArray());
+                        messageReceivedCallback(message);
+                        _channel.BasicAck(args.DeliveryTag, false);
+                    }
                 };
-                _channel.BasicConsume(_queueName, false, _consumer);
-                IsSubscribed = true;
+                await Task.Run(() =>_channel.BasicConsume(_queueName, false, _consumer));
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
+            catch (Exception ex) { Debug.WriteLine(ex.Message); }
+        }
+
+        public void ClearQueue()
+        {
+            _channel.QueuePurge(_queueName);
         }
     }
+
 }

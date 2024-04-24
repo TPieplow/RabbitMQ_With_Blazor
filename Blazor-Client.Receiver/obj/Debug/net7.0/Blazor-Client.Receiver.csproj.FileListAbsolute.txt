@@ -32,3 +32,4 @@ C:\Projects\RabbitMQ\RabbitMQ\Blazor-Client.Receiver\obj\Debug\net7.0\refint\Bla
 C:\Projects\RabbitMQ\RabbitMQ\Blazor-Client.Receiver\obj\Debug\net7.0\Blazor-Client.Receiver.pdb
 C:\Projects\RabbitMQ\RabbitMQ\Blazor-Client.Receiver\obj\Debug\net7.0\Blazor-Client.Receiver.genruntimeconfig.cache
 C:\Projects\RabbitMQ\RabbitMQ\Blazor-Client.Receiver\obj\Debug\net7.0\ref\Blazor-Client.Receiver.dll
+C:\Projects\RabbitMQ\RabbitMQ\Blazor-Client.Receiver\obj\Debug\net7.0\Blazor-Client.Receiver.sourcelink.json

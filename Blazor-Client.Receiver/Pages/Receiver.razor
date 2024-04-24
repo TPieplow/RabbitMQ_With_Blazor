@@ -1,43 +1,58 @@
 ﻿@page "/receiver"
 @using Blazor_Client.Receiver.Brokers
+@using System.Diagnostics
 
 <h3>Receiver</h3>
+<p>Waiting ...</p>
 
-    @foreach (var msg in _messages)
-    {
-        <p>Received the following message: @msg</p>
-    }
+@foreach (var msg in _messages)
+{
+    <ul>Received the following message: @msg</ul>
+}
 
 @code {
-    private RabbitMqBroker _receiver;
+    private RabbitMqBroker? _receiver;
     private List<string> _messages = new List<string>();
-    public bool firstRender = true;
+    private bool _isSubscriptionReady = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _receiver = new RabbitMqBroker("Receiver", "amqp://guest:guest@localhost:5672", "subscribe", "subsciber", "newsletter");
-        _receiver.Subscribe(OnMessageReceived);
+        _receiver = new RabbitMqBroker("Receiver", "amqp://guest:guest@localhost:5672", "subscribe", "subscriber", "newsletter");
+        _receiver.ClearQueue();
+        await _receiver.SubscribeAsync(OnMessageReceived);
     }
-
-
-
-
 
     private async void OnMessageReceived(string message)
     {
-        if (!_receiver.IsSubscribed)
+        try
         {
-            _receiver.Subscribe(OnMessageReceived);
-        }
-       
-            await InvokeAsync(() =>
+            Debug.WriteLine("Meddelande mottaget: " + message);
+
+            while (!_isSubscriptionReady && _receiver is not null)
             {
-                _messages.Add(message);
-                if (firstRender)
+                await _receiver.SubscribeAsync(OnMessageReceived);
+                if (!_messages.Contains(message) && message is not null)
                 {
-                    firstRender = false;
+                    _messages.Add(message);
+                    await InvokeAsync(() => StateHasChanged());
+                    _isSubscriptionReady = true;
                 }
-                StateHasChanged();
-            });
+
+                break;
+            }
+        }
+        catch (Exception ex) { Debug.WriteLine(ex.Message); }
+        finally
+        {
+            _isSubscriptionReady = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_receiver != null)
+        {
+            _receiver.Close();
+        }
     }
 }
