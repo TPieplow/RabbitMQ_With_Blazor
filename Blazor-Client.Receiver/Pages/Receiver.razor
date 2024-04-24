@@ -1,0 +1,43 @@
+﻿@page "/receiver"
+@using Blazor_Client.Receiver.Brokers
+
+<h3>Receiver</h3>
+
+    @foreach (var msg in _messages)
+    {
+        <p>Received the following message: @msg</p>
+    }
+
+@code {
+    private RabbitMqBroker _receiver;
+    private List<string> _messages = new List<string>();
+    public bool firstRender = true;
+
+    protected override void OnInitialized()
+    {
+        _receiver = new RabbitMqBroker("Receiver", "amqp://guest:guest@localhost:5672", "subscribe", "subsciber", "newsletter");
+        _receiver.Subscribe(OnMessageReceived);
+    }
+
+
+
+
+
+    private async void OnMessageReceived(string message)
+    {
+        if (!_receiver.IsSubscribed)
+        {
+            _receiver.Subscribe(OnMessageReceived);
+        }
+       
+            await InvokeAsync(() =>
+            {
+                _messages.Add(message);
+                if (firstRender)
+                {
+                    firstRender = false;
+                }
+                StateHasChanged();
+            });
+    }
+}
